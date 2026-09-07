@@ -1,511 +1,270 @@
-# Bluetooth-Based Secure Locker with Access Logging
+<div align="center">
 
-## Project Overview
+# 🔒 Bluetooth-Based Secure Locker with Access Logging
 
-The **Bluetooth-Based Secure Locker with Access Logging** is an embedded security system developed using the **LPC2148 ARM7 microcontroller** and **Embedded C**.
+### A Two-Factor Embedded Access-Control System on the LPC2148 (ARM7)
 
-The locker uses two-level authentication:
+*A dual-authentication embedded security system built on the ARM7 (LPC2148), combining Bluetooth and physical keypad verification with real-time tamper detection and RTC-based audit logging.*
 
-1. A **4-digit Level-1 password** is received from an Android phone through an **HC-05 Bluetooth module** using UART1.
-2. After successful Level-1 authentication, the user enters a **4-digit Level-2 password** using a **4x4 keypad**.
-3. Only when both passwords are correct does the system operate the DC motor through an **L293D H-bridge** to unlock the locker.
+![Platform](https://img.shields.io/badge/Platform-ARM7%20LPC2148-blue?style=flat-square)
+![Language](https://img.shields.io/badge/Language-Embedded%20C-00599C?style=flat-square)
+![IDE](https://img.shields.io/badge/IDE-Keil%20µVision-orange?style=flat-square)
+![Bluetooth](https://img.shields.io/badge/Wireless-HC--05%20Bluetooth-0082FC?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen?style=flat-square)
 
-The system also provides RTC-based access logging, tamper detection, buzzer alerts, and an administrator menu for changing passwords and RTC settings.
+</div>
 
-## Main Features
+---
 
-- Two-level password authentication
-- Level-1 password through Bluetooth
-- Level-2 password through keypad
-- Password storage in external **AT24C256 EEPROM**
-- 16x2 LCD user interface
-- RTC date and time
-- Timestamped access/event logging through UART0
-- Tamper detection using an active-LOW switch
-- Buzzer alert for unauthorized access/tamper events
-- DC motor control through L293D
-- Automatic locker opening and closing
-- Administrator menu using **EINT2 external interrupt**
-- RTC setting from the admin menu
-- Level-1 and Level-2 password modification
-- Bluetooth stale-command watchdog for incomplete commands
+## 📖 Overview
 
-## Hardware Requirements
+This project is a two-factor embedded access-control system built on the **NXP LPC2148 (ARM7TDMI-S)**. A user first sends a 4-digit password from a phone over **Bluetooth** (Level-1); if correct, they're prompted to enter a second 4-digit password on a **physical keypad** (Level-2). Only when both match does the system drive a **DC motor** to open — and then automatically close — the locker. Every significant event is timestamped via the on-chip RTC and streamed out over UART0 as an audit log.
 
-- LPC2148 ARM7 Microcontroller
-- 16x2 LCD
-- 4x4 Matrix Keypad
-- AT24C256 EEPROM
-- HC-05 Bluetooth Module
-- DC Motor
-- L293D Motor Driver
-- Buzzer
-- Tamper Switch
-- Admin Push Button
-- 12 MHz Crystal
+---
 
-## Software Requirements
+## ✨ Highlights
 
-- Embedded C
-- Keil C / Keil µVision
-- Flash Magic
+| | Feature | Description |
+|---|---|---|
+| 📱 | **Bluetooth Authentication** | Level-1 password sent via HC-05 (UART1) from any Bluetooth serial app |
+| 🔢 | **Keypad Authentication** | Level-2 password entered on a 4×4 matrix keypad after Level-1 succeeds |
+| ⚙️ | **Motor-Driven Locking** | L293D H-bridge drives a DC motor to physically open/close the locker |
+| 🛡️ | **Tamper Detection** | Active-LOW switch triggers an instant alert if the enclosure is opened |
+| 🕒 | **RTC Audit Logging** | Every event is timestamped and streamed over UART0 for a PC-side access log |
+| 💾 | **EEPROM Password Storage** | Passwords persist across power cycles via I2C (AT24C256) |
+| 🧑‍💻 | **Admin Configuration Menu** | Edit the RTC date/time or change either password — all on-device |
+| 🔊 | **Buzzer Alerts** | Sounds on failed authentication or tamper detection |
+| 🖥️ | **LCD Status Display** | 16×2 LCD shows live system state — standby, prompts, results, alerts |
 
-## Pin Connections
+---
 
-### LCD - 4-bit Mode
+## 🔌 Hardware & Pin Connections
 
-| LCD Signal | LPC2148 Pin |
-|---|---|
-| RS | P0.16 |
-| EN | P0.17 |
-| D4 | P0.18 |
-| D5 | P0.19 |
-| D6 | P0.20 |
-| D7 | P0.21 |
+| Module | Signal | LPC2148 Pin |
+|---|---|---|
+| 🖥️ **LCD (16×2, 4-bit mode)** | RS | P0.16 |
+| | EN | P0.17 |
+| | D4 – D7 | P0.18 – P0.21 |
+| 🖧 **UART0** (debug/log → PC) | TXD0 | P0.0 |
+| | RXD0 | P0.1 |
+| 💾 **I2C0** (AT24C256 EEPROM) | SCL0 | P0.2 |
+| | SDA0 | P0.3 |
+| 🛡️ **Tamper Switch** | Signal (active LOW) | P0.4 |
+| 🧑‍💻 **Admin Button** | EINT2 (falling edge) | P0.7 |
+| 📶 **UART1** (HC-05 Bluetooth) | TXD1 | P0.8 |
+| | RXD1 | P0.9 |
+| 🔢 **Keypad (4×4 matrix)** | Rows | P1.16 – P1.19 |
+| | Columns | P1.20 – P1.23 |
+| ⚙️ **Motor Driver (L293D)** | IN1 | P1.24 |
+| | IN2 | P1.25 |
+| 🔊 **Buzzer** | Signal | P1.26 |
 
-### UART0 - PC / Access Log
+**Core clock:** 60 MHz (12 MHz crystal) · **PCLK:** 15 MHz · **UART baud rate:** 9600
 
-| Signal | LPC2148 Pin |
-|---|---|
-| TXD0 | P0.0 |
-| RXD0 | P0.1 |
+---
 
-UART0 is used for monitoring and timestamped audit logs.
+## 🔑 Default Credentials
 
-### I2C0 - 24C256 EEPROM
+| Level | Method | Factory Default |
+|---|---|---|
+| Level 1 | Bluetooth | `1234` |
+| Level 2 | Keypad | `5678` |
 
-| Signal | LPC2148 Pin |
-|---|---|
-| SCL0 | P0.2 |
-| SDA0 | P0.3 |
-| EEPROM VCC | 3V3 |
+> Written to EEPROM automatically on first boot only. **Change both via the admin menu before real-world use.**
 
-### Tamper Switch
+---
 
-| Signal | LPC2148 Pin |
-|---|---|
-| Tamper input | P0.4 |
+## 🧑‍💻 Admin Menu
 
-The tamper switch is **active LOW**.
+Triggered by a dedicated push-button on **EINT2**, which suspends normal operation and opens the configuration menu on the LCD:
 
-### Admin Push Button
-
-| Signal | LPC2148 Pin |
-|---|---|
-| EINT2 / Admin button | P0.7 |
-
-The button is configured for a falling-edge EINT2 interrupt.
-
-### UART1 - HC-05 Bluetooth
-
-| Signal | LPC2148 Pin |
-|---|---|
-| MCU TXD1 → HC-05 RXD | P0.8 |
-| MCU RXD1 ← HC-05 TXD | P0.9 |
-
-### 4x4 Keypad
-
-| Keypad | LPC2148 Pin |
-|---|---|
-| Rows | P1.16 - P1.19 |
-| Columns | P1.20 - P1.23 |
-
-### DC Motor - L293D
-
-| Signal | LPC2148 Pin |
-|---|---|
-| IN1 | P1.24 |
-| IN2 | P1.25 |
-
-### Buzzer
-
-| Signal | LPC2148 Pin |
-|---|---|
-| Buzzer signal | P1.26 |
-
-## Project Software Structure
-
-The uploaded Keil project contains these source and header files:
-
-```text
-Secure_Locker_Major_Project/
-│
-├── main.c
-│
-├── lcd.c
-├── lcd.h
-├── lcd_defines.h
-│
-├── keypad.c
-├── keypad.h
-│
-├── uart.c
-├── uart.h
-│
-├── bluetooth.c
-├── bluetooth.h
-│
-├── eeprom.c
-├── eeprom.h
-│
-├── rtc.c
-├── rtc.h
-│
-├── motor.c
-├── motor.h
-│
-├── buzzer.c
-├── buzzer.h
-│
-├── security.c
-├── security.h
-│
-├── menu.c
-├── menu.h
-│
-├── delay.c
-├── delay.h
-│
-├── defines.h
-├── types.h
-│
-├── Startup.s
-└── locker_project.uvproj
+```
+1. EDIT RTC        → hour / minute / second / date / month / year / day
+2. EDIT PASSWORDS  → change Level-1 or Level-2 (old → new → confirm)
+3. EXIT            → return to normal locker operation
 ```
 
-## Module Description
+---
 
-| Module | Purpose |
-|---|---|
-| `main.c` | Main application flow and integration of all modules |
-| `lcd.c / lcd.h` | 16x2 LCD driver in 4-bit mode |
-| `lcd_defines.h` | LCD pin definitions |
-| `keypad.c / keypad.h` | 4x4 keypad scanning and key input |
-| `uart.c / uart.h` | UART0 and UART1 communication |
-| `bluetooth.c / bluetooth.h` | HC-05 Bluetooth command handling |
-| `eeprom.c / eeprom.h` | I2C and 24C256 EEPROM read/write operations |
-| `rtc.c / rtc.h` | RTC initialization, time/date handling and RTC persistence |
-| `motor.c / motor.h` | DC motor forward, reverse and stop control |
-| `buzzer.c / buzzer.h` | Buzzer control and alert patterns |
-| `security.c / security.h` | Tamper detection, event logging and default password initialization |
-| `menu.c / menu.h` | Administrator menu, RTC editing and password editing |
-| `delay.c / delay.h` | Delay functions |
-| `defines.h` | Project-wide constants and configuration |
-| `types.h` | User-defined data types |
-| `Startup.s` | ARM startup code |
-| `locker_project.uvproj` | Keil project file |
+## 🗂️ Project Structure
 
-## System Working
-
-### Normal Authentication Flow
-
-```text
-Power ON
-   ↓
-System Initialization
-   ↓
-Restore RTC / Initialize Passwords
-   ↓
-Waiting for Bluetooth Password
-   ↓
-Receive Level-1 Password through HC-05
-   ↓
-Compare with Password in EEPROM
-   ↓
- ┌───────────────┐
- │ Correct?      │
- └───────┬───────┘
-     Yes │ No
-         │
-         ↓
-   Enter Level-2
-   Password
-   using Keypad
-         ↓
-   Compare with
-   EEPROM Password
-         ↓
- ┌───────────────┐
- │ Correct?      │
- └───────┬───────┘
-     Yes │ No
-         │
-         ↓
-   Access Granted
-         ↓
- Motor Forward
-         ↓
- Locker Opens
-         ↓
- Access Period
-         ↓
- Motor Reverse
-         ↓
- Locker Closes
-         ↓
- Return to Idle / RTC Display
+```
+Bluetooth-Based-Secure-Locker/
+├── README.md
+├── locker_project.uvproj
+├── src/
+│   ├── main.c          # System init, main state machine, admin menu wiring
+│   ├── menu.c            # Admin menu (Edit RTC / Edit Passwords / Exit)
+│   ├── bluetooth.c        # HC-05 UART1 command parsing (Level-1 password)
+│   ├── keypad.c            # 4x4 matrix keypad driver (Level-2 password)
+│   ├── lcd.c                # 16x2 LCD driver (4-bit mode)
+│   ├── eeprom.c              # AT24C256 I2C read/write (passwords + RTC backup)
+│   ├── rtc.c                  # On-chip RTC read/write, timestamp formatting
+│   ├── motor.c                  # L293D motor control (open/close locker)
+│   ├── buzzer.c                   # Buzzer alert patterns
+│   ├── security.c                  # Tamper detection + UART0 event logging
+│   ├── uart.c                        # UART0/UART1 low-level driver
+│   ├── delay.c                         # Software delay routines
+│   └── Startup.s                        # ARM startup assembly
+├── include/                               # Header files (one per module)
+└── documentation/                           # Diagrams and test screenshots
 ```
 
-If either password is incorrect, access is denied and the buzzer is activated.
+---
 
-## Bluetooth Password Format
+## 📸 Hardware Prototype
 
-The Level-1 password is a **4-digit password**.
+![Hardware prototype](documentation/04_access_granted.jpg)
 
-The project expects the Bluetooth command to be terminated with `#`.
+*Complete hardware implementation of the Bluetooth-Based Secure Locker on the Vector India LPC2148 development board — LCD, 4×4 keypad, HC-05 Bluetooth, MAX232, EEPROM, and L293D motor driver all wired and functional.*
 
-Example:
+---
 
-```text
-1234#
-```
+## 🔌 Hardware Block Diagram
 
-The default Level-1 password in the project source is:
+![Hardware block diagram](documentation/circuit_block_diagram.png)
 
-```text
-1234
-```
+*System block diagram — LPC2148 connected to keypad, LCD, buzzer, L293D/DC motor, EEPROM, HC-05 Bluetooth, and PC via MAX232.*
 
-The default Level-2 keypad password is:
+---
 
-```text
-5678
-```
+## 🔍 How It Works — Full Walkthrough
 
-These factory defaults are populated into EEPROM on the first boot when the EEPROM is considered uninitialized.
+1️⃣ **Power On** — LPC2148 initializes all peripherals (LCD, UART, I2C, RTC, keypad, motor, buzzer). On first-ever boot, default passwords (`1234` Bluetooth / `5678` keypad) are written to EEPROM.
 
-These default credentials are intended for first-boot initialization only. Both passwords should be changed through the Administrator Menu before the locker is used in any real-world deployment.
+2️⃣ **Standby** — LCD shows an idle screen; system waits for a Bluetooth password or an admin button press.
 
-## EEPROM
+3️⃣ **Level-1 (Bluetooth)** — User sends a 4-digit password via HC-05, terminated with `#` (e.g. `1234#`). Wrong → access denied, buzzer alert, event logged. Correct → proceeds to Level-2.
 
-The external **AT24C256 EEPROM** is used for non-volatile storage.
+4️⃣ **Level-2 (Keypad)** — User enters the second password on the keypad. Wrong → same denial flow. Correct → access granted.
 
-The project uses EEPROM for:
+5️⃣ **Unlock** — Motor (via L293D) rotates forward to open the locker.
 
-- Level-1 Bluetooth password
-- Level-2 keypad password
-- EEPROM initialization marker
-- Saved RTC date/time/day values
+6️⃣ **Auto-Lock** — After the configured access period, the motor reverses and re-locks automatically.
 
-The password memory locations defined in `defines.h` are:
+7️⃣ **Logging** — Every event (boot, BT request, pass/fail, open/close, tamper, admin action) is timestamped via RTC and streamed over UART0 to a PC terminal.
 
-```text
-EEPROM_L1_ADDR = 0x0010
-EEPROM_L2_ADDR = 0x0020
-```
+8️⃣ **Tamper Detection** — Monitored continuously in the background; opening the enclosure triggers an immediate alarm regardless of locker state.
 
-## RTC and Access Logging
+9️⃣ **Admin Mode** — Pressing the admin button opens the on-device menu to edit the RTC or update either password.
 
-The LPC2148 RTC provides date and time information for event logging.
+---
 
-Important system events are timestamped and transmitted through **UART0**, allowing a PC/terminal to monitor the locker activity.
+## 🧩 Software Architecture
 
-Examples of logged events include:
+The firmware is split into focused, single-responsibility modules:
 
-- System boot
-- Bluetooth authentication
-- Successful authentication
-- Failed password attempts
-- Locker opening
-- Locker closing
-- Tamper detection
-- Administrator actions
-- RTC changes
+- **Application Layer** (`main.c`) — initializes peripherals and runs the main state machine that sequences the two-factor auth flow, motor control, and admin menu.
+- **Logic Layer** (`security.c`, `menu.c`) — tamper detection, default password initialization, and event logging (`security.c`); the admin menu for RTC and password edits (`menu.c`).
+- **Driver Layer** — one focused file per peripheral: `bluetooth.c`, `keypad.c`, `lcd.c`, `eeprom.c`, `rtc.c`, `motor.c`, `buzzer.c`, `uart.c`. Each only knows how to talk to its own hardware.
 
-## Tamper Detection
+This separation means changing one peripheral's driver — say, swapping the LCD — only touches that file, not the rest of the codebase.
 
-The tamper switch is connected to **P0.4** and is active LOW.
+---
 
-When tampering is detected:
+## 🔐 Security Design
 
-- The system displays a tamper alert.
-- The buzzer is activated.
-- The event is recorded in the audit log.
-- Normal password authentication is blocked while the tamper condition remains active.
-- The administrator interrupt can still be serviced.
+- **Two-Factor Authentication** — a Bluetooth password alone, or a keypad password alone, is not enough; both are required.
+- **Persistent Storage** — passwords live in EEPROM (I2C), not volatile memory, so they survive power loss and can only be changed via the admin menu.
+- **Tamper Detection** — a dedicated switch is monitored continuously and independently of authentication state.
+- **Full Audit Trail** — every event (logins, denials, tamper, admin actions) is RTC-timestamped and logged over UART0.
 
-## Administrator Menu
+---
 
-The admin push button is connected to **P0.7** and uses **EINT2**.
+## 📡 Communication Protocol
 
-Pressing the administrator button interrupts normal operation and opens the configuration menu.
+- **Bluetooth (Level-1)** — HC-05 over UART1 @ 9600 baud. Password sent as digits + `#` terminator (e.g. `1234#`). If digits arrive without the `#` terminator within `BT_PENDING_TIMEOUT_MS` (3000 ms), the incomplete command is cleared automatically so a stale partial entry can't merge with the next attempt.
+- **Keypad (Level-2)** — row/column matrix scanning on P1.16–P1.23.
+- **PC Audit Log (UART0)** — a separate channel streaming a live, human-readable log line per event, viewable on a laptop via USB-to-TTL/MAX232.
 
-The current menu provides:
+---
 
-```text
-1 = RTC
-2 = Password
-3 = Set
-```
+## 🧪 Testing Results
 
-### RTC Settings
+The complete authentication and locker-control flow was tested end-to-end on hardware.
 
-The administrator can modify:
+**1. Idle state — waiting for Bluetooth password**
 
-- Hour
-- Minute
-- Second
-- Date
-- Month
-- Year
-- Day of week
+![Waiting for Bluetooth](documentation/01_waiting_bluetooth.jpg)
 
-The updated RTC values are also saved to EEPROM.
+LCD displays "Waiting BT Pwd, Send from #", confirming the system correctly waits for a Level-1 Bluetooth password.
 
-### Password Settings
+**2. Level-1 authentication success**
 
-The administrator can update either:
+![Level-1 auth success](documentation/02_level1_auth_success.jpg)
 
-- Level-1 Bluetooth password
-- Level-2 keypad password
+On receiving the correct Bluetooth password, the LCD updates to "L1 Auth OK! Enter L2 Pass:", confirming successful Bluetooth authentication and transition to keypad entry.
 
-The password change process requires:
+**3. Level-2 keypad entry**
 
-```text
-Old Password
-      ↓
-New Password
-      ↓
-Confirm New Password
-```
+![Keypad password entry](documentation/03_keypad_password_entry.jpg)
 
-The new password is stored in EEPROM so it remains available after reset.
+The LCD shows "KEYPAD PWD:" while the second password is entered on the 4x4 matrix keypad.
 
-## Motor Control
+**4. Access granted**
 
-The DC motor is controlled through an **L293D H-bridge**.
+![Access granted](documentation/04_access_granted.jpg)
 
-The project uses:
+On correct Level-2 entry, the LCD displays "ACCESS GRANTED! Opening Locker..", and the motor drives to unlock the locker.
 
-```text
-P1.24 → IN1
-P1.25 → IN2
-```
+**5. Locker open state**
 
-The configured motor timing is:
+![Locker open](documentation/05_locker_open.jpg)
 
-```text
-MOTOR_ROTATE_MS = 500 ms
-MOTOR_SETTLE_MS = 200 ms
-```
+The LCD confirms "Locker OPEN, Take your item", verifying the motor successfully opened the locker and the system tracks the open state correctly.
 
-The motor:
+All LCD prompts, Bluetooth Level-1 authentication, keypad Level-2 authentication, and motor-driven unlocking were verified working as designed on the Vector India LPC2148 development board.
 
-1. Rotates forward to open the locker.
-2. Stops while the locker remains open.
-3. Waits for the configured access period.
-4. Rotates in reverse to close the locker.
-5. Stops after closing.
+---
 
-The motor timing is hardware-dependent and may need tuning for the actual mechanical locker.
+## 🧗 Challenges Faced
 
-## Clock Configuration
+- **Bluetooth pairing and baud rate mismatch** — Initially, the HC-05 module either failed to respond or returned garbled characters over UART1. This was traced to a mismatch between the module's configured baud rate and the LPC2148's UART1 initialization. Fixing both sides to a consistent 9600 baud resolved reliable Level-1 password reception.
+- **Wiring congestion** — With this many peripherals (keypad, LCD, EEPROM, Bluetooth, motor driver, buzzer) all connected via jumper wires to a single development board, the dense wiring occasionally caused intermittent resets or incorrect readings from a loose or shorted connection. Reseating and re-routing wires more carefully, and double-checking each peripheral's connections individually before full integration, fixed these intermittent faults.
 
-The project configures the LPC2148 for:
+---
 
-```text
-Crystal frequency : 12 MHz
-Core clock (CCLK) : 60 MHz
-Peripheral clock   : 15 MHz
-```
+## ⚠️ Known Limitations
 
-UART communication is initialized at:
+- Default passwords are hardcoded and should be changed before deployment
+- EEPROM writes aren't wear-leveled
+- No recovery if power is lost mid-motor-cycle
+- Bluetooth security relies on standard HC-05 pairing (not encrypted beyond Bluetooth Classic)
+- Single admin level — no multi-user roles
 
-```text
-9600 baud
-```
+---
 
-## Bluetooth Command Watchdog
+## 🛠️ Build & Flash
 
-The Bluetooth input buffer uses a `#` terminator.
+1. Open `locker_project.uvproj` in **Keil µVision**.
+2. Confirm the LPC2148 target is selected, then build to generate the `.hex` file.
+3. Flash the `.hex` to the LPC2148 using **Flash Magic** (board in ISP mode).
+4. Wire up the hardware per the pin table above.
+5. Open a UART0 terminal on the PC to view the live access log.
+6. Pair your phone with the HC-05 module and send the Level-1 password from a Bluetooth terminal app.
 
-If digits are received but the `#` terminator is not received within the configured timeout, the incomplete command is automatically cleared.
+---
 
-Configured timeout:
+## 📈 Future Enhancements
 
-```text
-BT_PENDING_TIMEOUT_MS = 3000 ms
-```
+- Dedicated mobile app UI instead of a generic Bluetooth terminal
+- Wi-Fi/cloud logging alongside UART0
+- OLED/graphical display instead of 16×2 LCD
+- RTC battery backup (VBAT) so time survives full power loss
+- EEPROM wear-leveling for frequently written values
 
-This prevents an incomplete previous command from being combined with a later Bluetooth password.
+---
 
-## Build and Run
+## 👤 Author
 
-1. Open `locker_project.uvproj` in Keil µVision.
-2. Make sure the LPC2148 device/project configuration is selected.
-3. Build the project.
-4. Generate the required output file such as the HEX file.
-5. Program the LPC2148 using the appropriate programming method/Flash Magic.
-6. Connect the required hardware modules according to the pin configuration.
-7. Open a UART0 terminal on the monitoring PC to observe access logs.
-8. Use a Bluetooth serial Android application (e.g., **Arduino BlueControl** or any generic Bluetooth Terminal app) to send the Level-1 password to the HC-05 module.
+**Mohini Gomare**
 
-## Known Limitations
+Embedded Systems Project — LPC2148 ARM7 Microcontroller
 
-The current implementation has the following limitations:
+### 🚀 Tech Stack
 
-- Factory-default passwords are hardcoded in source and should be changed before deployment.
-- EEPROM writes for passwords and RTC values are not wear-leveled.
-- The system does not detect or recover from power loss occurring mid-motor-cycle.
-- Bluetooth authentication relies on standard HC-05 pairing and is not encrypted beyond Bluetooth Classic security.
-- The system supports a single administrator level; multi-user or role-based access is not implemented.
+`Embedded C` · `ARM7TDMI-S (LPC2148)` · `Keil µVision` · `UART` · `I2C` · `GPIO Interrupts` · `RTC` · `HC-05 Bluetooth`
 
-## Future Enhancements
+---
 
-Planned or possible improvements for future versions of this project include:
 
-- EEPROM wear-leveling or rotating storage for frequently written values.
-- Power-loss and motor-state recovery using EEPROM state flags.
-- Migration of Bluetooth authentication to an encrypted channel such as BLE with pairing keys.
-- Support for multiple user profiles with individual access logs.
-- A dedicated mobile app interface in place of raw serial command input for Level-1 authentication.
-
-## Repository Contents
-
-The repository should contain the actual source code, header files, startup file, and Keil project files.
-
-Generated build artifacts such as the following do not need to be included in the source-code repository:
-
-```text
-*.o
-*.d
-*.crf
-*.lst
-*.axf
-*.map
-*.hex
-*.bak
-*.plg
-*.tra
-*.lnp
-*.sct
-*.htm
-```
-
-## Project Information
-
-**Project:** Bluetooth-Based Secure Locker with Access Logging
-
-**Microcontroller:** LPC2148 ARM7TDMI-S
-
-**Programming:** Embedded C
-
-**IDE:** Keil µVision / Keil C
-
-**Bluetooth:** HC-05
-
-**EEPROM:** AT24C256
-
-**Display:** 16x2 LCD
-
-**Keypad:** 4x4 Matrix Keypad
-
-**Motor Driver:** L293D
-
-**Logging:** UART0 + RTC
-
-## Author
-
-Mohini Gomare
-
-Embedded Systems Project - LPC2148 ARM7 Microcontroller.
