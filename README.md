@@ -224,15 +224,7 @@ All LCD prompts, Bluetooth Level-1 authentication, keypad Level-2 authentication
 
 ---
 
-## ⚠️ Known Limitations
 
-- Default passwords are hardcoded and should be changed before deployment
-- EEPROM writes aren't wear-leveled
-- No recovery if power is lost mid-motor-cycle
-- Bluetooth security relies on standard HC-05 pairing (not encrypted beyond Bluetooth Classic)
-- Single admin level — no multi-user roles
-
----
 
 ## 🛠️ Build & Flash
 
