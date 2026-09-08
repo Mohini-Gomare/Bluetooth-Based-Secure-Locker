@@ -179,6 +179,23 @@ This separation means changing one peripheral's driver — say, swapping the LCD
 
 ---
 
+## 📋 UART Event Logging
+
+Every significant event is transmitted over UART0 as a timestamped log line, giving a complete real-time audit trail visible on a connected PC terminal:
+
+- Records Bluetooth (Level-1) and keypad (Level-2) authentication attempts
+- Logs successful and failed password matches
+- Displays locker open and close operations
+- Shows administrator activity such as password updates
+- Maintains RTC-based timestamps for every event
+- Provides a complete access history for security review
+
+![UART event log](documentation/06_uart_event_log.png)
+
+*Captured UART0 output from a live session — showing the full Level-1 Bluetooth match, Level-2 keypad match, locker open/close, and return to idle, each with an RTC timestamp.*
+
+---
+
 ## 🧪 Testing Results
 
 The complete authentication and locker-control flow was tested end-to-end on hardware.
@@ -224,8 +241,6 @@ All LCD prompts, Bluetooth Level-1 authentication, keypad Level-2 authentication
 
 ---
 
-
-
 ## 🛠️ Build & Flash
 
 1. Open `locker_project.uvproj` in **Keil µVision**.
@@ -258,5 +273,3 @@ Embedded Systems Project — LPC2148 ARM7 Microcontroller
 `Embedded C` · `ARM7TDMI-S (LPC2148)` · `Keil µVision` · `UART` · `I2C` · `GPIO Interrupts` · `RTC` · `HC-05 Bluetooth`
 
 ---
-
-
