@@ -206,11 +206,15 @@ The complete authentication and locker-control flow was tested end-to-end on har
 
 LCD displays "Waiting BT Pwd, Send from #", confirming the system correctly waits for a Level-1 Bluetooth password.
 
+This confirms the LPC2148 boots correctly, initializes all peripherals, and enters a stable idle state without requiring any manual reset. The UART1 receive interrupt for the HC-05 module was verified to be armed and listening in this state — no password digits are accepted or buffered until the system is in this idle/waiting mode, which prevents stray Bluetooth data from being misread as a password attempt before the system is ready.
+
 **2. Level-1 authentication success**
 
 ![Level-1 auth success](documentation/02_level1_auth_success.jpg)
 
 On receiving the correct Bluetooth password, the LCD updates to "L1 Auth OK! Enter L2 Pass:", confirming successful Bluetooth authentication and transition to keypad entry.
+
+The password sent from the Bluetooth terminal app (`1234#`) was correctly parsed by the UART1 interrupt handler, matched against the Level-1 password stored in the 24C256 EEPROM, and the state machine transitioned to Level-2 entry within the configured response time. This also confirms the `#` terminator logic is working correctly — the system waited for the full 4 digits plus terminator before attempting the comparison, rather than validating digit-by-digit.
 
 **3. Level-2 keypad entry**
 
@@ -218,17 +222,23 @@ On receiving the correct Bluetooth password, the LCD updates to "L1 Auth OK! Ent
 
 The LCD shows "KEYPAD PWD:" while the second password is entered on the 4x4 matrix keypad.
 
+Each key press on the 4x4 matrix (rows P1.16–P1.19, columns P1.20–P1.23) was correctly scanned and debounced, with the LCD updating in real time as digits were entered. This test also confirmed that the system only accepts keypad input after Level-1 has already succeeded — pressing keys before Bluetooth authentication has no effect, verifying the two-factor sequence cannot be bypassed by starting from the keypad.
+
 **4. Access granted**
 
 ![Access granted](documentation/04_access_granted.jpg)
 
 On correct Level-2 entry, the LCD displays "ACCESS GRANTED! Opening Locker..", and the motor drives to unlock the locker.
 
+With both Level-1 and Level-2 passwords verified, the LPC2148 drove the L293D IN1/IN2 pins (P1.24/P1.25) to rotate the DC motor forward for the configured `MOTOR_ROTATE_MS` duration. The motor responded immediately after the second password match, with no noticeable delay between authentication success and motor activation, confirming the access-granted event and motor trigger are tightly coupled in the state machine.
+
 **5. Locker open state**
 
 ![Locker open](documentation/05_locker_open.jpg)
 
 The LCD confirms "Locker OPEN, Take your item", verifying the motor successfully opened the locker and the system tracks the open state correctly.
+
+The system correctly held in the "open" state for the configured access period before initiating auto-close, and the LCD message remained stable throughout — confirming the state machine does not re-trigger the motor or re-prompt for passwords while the locker is already open. This also verified that the corresponding "locker open" event was logged over UART0 with an RTC timestamp, matching the entry visible in the UART event log.
 
 All LCD prompts, Bluetooth Level-1 authentication, keypad Level-2 authentication, and motor-driven unlocking were verified working as designed on the Vector India LPC2148 development board.
 
